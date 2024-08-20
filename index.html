@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyOwnNotes</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="dark-mode">
+    <div id="noteContainer">
+        <textarea id="note" placeholder="Write your note here..."></textarea>
+    </div>
+
+    <div id="sidebar">
+        <div id="timerContainer">
+            <span id="selfDestructTimer">Self Destruct Timer: 24:00:00</span>
+        </div>
+        <div class="option">
+            <label for="visibility">Visibility</label>
+            <select id="visibility">
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+            </select>
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password">
+            <abbr title="Show or Hide the password"><button id="togglePassword"><i class="fas fa-eye"></i></button></abbr>
+            <abbr title="Generate a random password"><button id="generatePassword"><i class="fas fa-random"></i></button></abbr>
+        </div>
+        <div class="option">
+            <p>Current text size: <span id="textSizeDisplay">16px</span></p>
+            <abbr title="Increase the Text size"><button id="increaseTextSize"><i class="fas fa-arrow-up"></i></button></abbr>
+            <abbr title="Decrease the Text size"><button id="decreaseTextSize"><i class="fas fa-arrow-down"></i></button></abbr>
+        </div>
+        <div class="option">
+            <button id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</button>
+        </div>
+    </div>
+
+    <i id="toggleSidebar" class="fas fa-arrow-left"></i>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const noteTextarea = document.getElementById('note');
+            const todoList = document.getElementById('todoList');
+            const selfDestructTimer = document.getElementById('selfDestructTimer');
+            const increaseTextSizeBtn = document.getElementById('increaseTextSize');
+            const decreaseTextSizeBtn = document.getElementById('decreaseTextSize');
+            const textSizeDisplay = document.getElementById('textSizeDisplay');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            const generatePasswordBtn = document.getElementById('generatePassword');
+            const sidebar = document.getElementById('sidebar');
+            const toggleSidebarBtn = document.getElementById('toggleSidebar');
+            const toggleThemeBtn = document.getElementById('toggleTheme');
+            const body = document.body;
+            let lastModificationTime = new Date().getTime();
+            let textSize = 16;
+            let sidebarVisible = true;
+
+            toggleThemeBtn.addEventListener('click', () => {
+                body.classList.toggle('light-mode');
+                if (body.classList.contains('light-mode')) {
+                    toggleThemeBtn.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+                } else {
+                    toggleThemeBtn.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                }
+            });
+
+            const updateTimer = () => {
+                const currentTime = new Date().getTime();
+                const timeElapsed = currentTime - lastModificationTime;
+                const timeRemaining = 24 * 60 * 60 * 1000 - timeElapsed;
+
+                if (timeRemaining <= 0) {
+                    localStorage.removeItem('recentNotes');
+                    window.location.href = 'expired.html'; // Redirect to an expired page
+                } else {
+                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+                    selfDestructTimer.textContent = `Self Destruct Timer: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            };
+
+            const loadTodoList = () => {
+                fetch('todo.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        todoList.innerHTML = '';
+                        data.todos.forEach(todo => {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = todo;
+                            todoList.appendChild(listItem);
+                        });
+                    })
+                    .catch(error => console.error('Error loading TODO list:', error));
+            };
+
+            const adjustTextSize = (increment) => {
+                textSize += increment;
+                textSize = Math.max(10, textSize);
+                noteTextarea.style.fontSize = `${textSize}px`;
+                textSizeDisplay.textContent = `${textSize}px`;
+            };
+
+            const togglePasswordVisibility = () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                togglePasswordBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            };
+
+            const generateRandomPassword = (length) => {
+                const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let password = '';
+                for (let i = 0; i < length; i++) {
+                    const randomIndex = Math.floor(Math.random() * charset.length);
+                    password += charset[randomIndex];
+                }
+                return password;
+            };
+
+            const generatePassword = () => {
+                const length = Math.floor(Math.random() * (16 - 8 + 1)) + 8;
+                passwordInput.value = generateRandomPassword(length);
+            };
+
+            const toggleSidebar = () => {
+                if (sidebarVisible) {
+                    sidebar.style.display = 'none';
+                    toggleSidebarBtn.className = 'fas fa-arrow-right';
+                } else {
+                    sidebar.style.display = 'flex';
+                    toggleSidebarBtn.className = 'fas fa-arrow-left';
+                }
+                sidebarVisible = !sidebarVisible;
+            };
+
+            increaseTextSizeBtn.addEventListener('click', () => {
+                adjustTextSize(2);
+            });
+
+            decreaseTextSizeBtn.addEventListener('click', () => {
+                adjustTextSize(-2);
+            });
+
+            togglePasswordBtn.addEventListener('click', () => {
+                togglePasswordVisibility();
+            });
+
+            generatePasswordBtn.addEventListener('click', () => {
+                generatePassword();
+            });
+
+            toggleSidebarBtn.addEventListener('click', () => {
+                toggleSidebar();
+            });
+
+            setInterval(updateTimer, 1000);
+
+            loadRecentNotes();
+            loadTodoList();
+        });
+    </script>
+</body>
+</html>
