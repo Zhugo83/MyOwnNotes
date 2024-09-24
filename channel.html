@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyOwnNotes-Channel</title>
+    <link rel="stylesheet" href="css/style-channel.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+</head>
+<body class="dark-mode no-transition">
+
+    <div class="loader-container">
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+    
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <article id="noteContainer">
+            <textarea id="note"></textarea>
+        </article>
+    
+        <section id="sidebar">
+            <article id="timerContainer">
+                <span id="selfDestructTimer">Self Destruct Timer: 24:00:00</span>
+            </article>
+            <article class="option">
+                <label for="visibility">Visibility</label>
+                <select id="visibility">
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                </select>
+
+                <label for="passwordmodification">Modification Password</label>
+                <input type="password" id="passwordmodification" placeholder="Enter password">
+                <abbr title="Show or Hide the password"><button id="togglePassword"><i class="fas fa-eye"></i></button></abbr>
+                <abbr title="Generate a random password"><button id="generatePassword"><i class="fas fa-random"></i></button></abbr>
+                
+                <div id="secondPasswordContainer">
+                    <label for="passwordvisibility">Visibility Password</label>
+                    <input type="password" id="passwordvisibility" placeholder="Enter password">
+                    <abbr title="Show or Hide the password"><button id="togglePassword2"><i class="fas fa-eye"></i></button></abbr>
+                    <abbr title="Generate a random password"><button id="generatePassword2"><i class="fas fa-random"></i></button></abbr>
+                </div>
+
+                <div id="shareLinksContainer">
+                    <abbr title="Share the channel"><button id="shareLink1">Share Link 1</button></abbr>
+                    <abbr title="Share the channel with modification"><button id="shareLink2">Share Link 2</button></abbr>
+                </div>
+            </article>
+            <article class="option">
+                <p>Current text size: <span id="textSizeDisplay">16px</span></p>
+                <abbr title="Increase the Text size"><button id="increaseTextSize"><i class="fas fa-arrow-up"></i></button></abbr>
+                <abbr title="Decrease the Text size"><button id="decreaseTextSize"><i class="fas fa-arrow-down"></i></button></abbr>
+            </article>
+            <article class="option">
+                <button id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</button>
+            </article>
+        </section>
+    
+        <i id="toggleSidebar" class="fas fa-arrow-left"></i>
+    </main>
+
+    <script src="js/theme.js"></script>
+    <script src="js/datachannel.js"></script>
+    <script src="js/channel.js"></script>
+</body>
+</html>

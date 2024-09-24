@@ -3,165 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyOwnNotes</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>MyOwnNotes - Main</title>
+    <link rel="stylesheet" href="css/style-main.css">
 </head>
-<body class="dark-mode">
-    <div id="noteContainer">
-        <textarea id="note" placeholder="Write your note here..."></textarea>
-    </div>
+<body class="dark-mode no-transition">
 
-    <div id="sidebar">
-        <div id="timerContainer">
-            <span id="selfDestructTimer">Self Destruct Timer: 24:00:00</span>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Welcome to MyOwnNotes</h1>
+        <div class="fun-bubble">
+            <p id="fun-text"></p>
         </div>
-        <div class="option">
-            <label for="visibility">Visibility</label>
-            <select id="visibility">
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-            </select>
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter password">
-            <abbr title="Show or Hide the password"><button id="togglePassword"><i class="fas fa-eye"></i></button></abbr>
-            <abbr title="Generate a random password"><button id="generatePassword"><i class="fas fa-random"></i></button></abbr>
-        </div>
-        <div class="option">
-            <p>Current text size: <span id="textSizeDisplay">16px</span></p>
-            <abbr title="Increase the Text size"><button id="increaseTextSize"><i class="fas fa-arrow-up"></i></button></abbr>
-            <abbr title="Decrease the Text size"><button id="decreaseTextSize"><i class="fas fa-arrow-down"></i></button></abbr>
-        </div>
-        <div class="option">
-            <button id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</button>
-        </div>
-    </div>
+        <section>
+            <article>
+                <h2>Create a Channel</h2>
+                <p>Having random ideas? Create your own channel to write them down!</p>
+                <ul>
+                    <li>Set up a password or modify its visibility to prevent other people from modifying your content or hiding it completely.</li>
+                    <li>Share your channel with anyone you want.</li>
+                    <li>Choose the time on when it should self-destruct.</li>
+                </ul>
+                <div>
+                    <form id="create-channel-form">
+                        <select id="selfdestructchoice" name="selfdestructchoice" required>
+                            <option value="1h">1 hour</option>
+                            <option value="12h">12 hours</option>
+                            <option value="24h">24 hours</option>
+                            <option value="1w">1 week</option>
+                            <option value="2w">2 weeks</option>
+                            <option value="1m">1 month</option>
+                        </select>
+                        <button type="submit">Create</button>
+                    </form>
+                    <p id="message" style="color: red;"></p> <!-- For error messages -->
+                </div>
+            </article>
+        </section>
+        
+        <input type="checkbox" id="toggle-stats" class="toggle-stats-checkbox">
+        <section class="stats">
+            <label for="toggle-stats" class="toggle-stats-label"></label>
+            <p class="channel-created">Number of Channel created: 151</p>
+            <p class="channel-closed">Number of Channel closed: 7741</p>
+            <p class="channel-open">Number of Channel open: 546</p>
+        </section>
+    </main>
 
-    <i id="toggleSidebar" class="fas fa-arrow-left"></i>
+    <footer>
+        <p>&copy; 2024 MyOwnNotes. All rights reserved.</p>
+    </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const noteTextarea = document.getElementById('note');
-            const todoList = document.getElementById('todoList');
-            const selfDestructTimer = document.getElementById('selfDestructTimer');
-            const increaseTextSizeBtn = document.getElementById('increaseTextSize');
-            const decreaseTextSizeBtn = document.getElementById('decreaseTextSize');
-            const textSizeDisplay = document.getElementById('textSizeDisplay');
-            const passwordInput = document.getElementById('password');
-            const togglePasswordBtn = document.getElementById('togglePassword');
-            const generatePasswordBtn = document.getElementById('generatePassword');
-            const sidebar = document.getElementById('sidebar');
-            const toggleSidebarBtn = document.getElementById('toggleSidebar');
-            const toggleThemeBtn = document.getElementById('toggleTheme');
-            const body = document.body;
-            let lastModificationTime = new Date().getTime();
-            let textSize = 16;
-            let sidebarVisible = true;
-
-            toggleThemeBtn.addEventListener('click', () => {
-                body.classList.toggle('light-mode');
-                if (body.classList.contains('light-mode')) {
-                    toggleThemeBtn.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
-                } else {
-                    toggleThemeBtn.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
-                }
-            });
-
-            const updateTimer = () => {
-                const currentTime = new Date().getTime();
-                const timeElapsed = currentTime - lastModificationTime;
-                const timeRemaining = 24 * 60 * 60 * 1000 - timeElapsed;
-
-                if (timeRemaining <= 0) {
-                    localStorage.removeItem('recentNotes');
-                    window.location.href = 'expired.html'; // Redirect to an expired page
-                } else {
-                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-                    selfDestructTimer.textContent = `Self Destruct Timer: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }
-            };
-
-            const loadTodoList = () => {
-                fetch('todo.json')
-                    .then(response => response.json())
-                    .then(data => {
-                        todoList.innerHTML = '';
-                        data.todos.forEach(todo => {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = todo;
-                            todoList.appendChild(listItem);
-                        });
-                    })
-                    .catch(error => console.error('Error loading TODO list:', error));
-            };
-
-            const adjustTextSize = (increment) => {
-                textSize += increment;
-                textSize = Math.max(10, textSize);
-                noteTextarea.style.fontSize = `${textSize}px`;
-                textSizeDisplay.textContent = `${textSize}px`;
-            };
-
-            const togglePasswordVisibility = () => {
-                const type = passwordInput.type === 'password' ? 'text' : 'password';
-                passwordInput.type = type;
-                togglePasswordBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-            };
-
-            const generateRandomPassword = (length) => {
-                const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                let password = '';
-                for (let i = 0; i < length; i++) {
-                    const randomIndex = Math.floor(Math.random() * charset.length);
-                    password += charset[randomIndex];
-                }
-                return password;
-            };
-
-            const generatePassword = () => {
-                const length = Math.floor(Math.random() * (16 - 8 + 1)) + 8;
-                passwordInput.value = generateRandomPassword(length);
-            };
-
-            const toggleSidebar = () => {
-                if (sidebarVisible) {
-                    sidebar.style.display = 'none';
-                    toggleSidebarBtn.className = 'fas fa-arrow-right';
-                } else {
-                    sidebar.style.display = 'flex';
-                    toggleSidebarBtn.className = 'fas fa-arrow-left';
-                }
-                sidebarVisible = !sidebarVisible;
-            };
-
-            increaseTextSizeBtn.addEventListener('click', () => {
-                adjustTextSize(2);
-            });
-
-            decreaseTextSizeBtn.addEventListener('click', () => {
-                adjustTextSize(-2);
-            });
-
-            togglePasswordBtn.addEventListener('click', () => {
-                togglePasswordVisibility();
-            });
-
-            generatePasswordBtn.addEventListener('click', () => {
-                generatePassword();
-            });
-
-            toggleSidebarBtn.addEventListener('click', () => {
-                toggleSidebar();
-            });
-
-            setInterval(updateTimer, 1000);
-
-            loadRecentNotes();
-            loadTodoList();
-        });
-    </script>
+    <script src="js/theme.js"></script>
+    <script src="js/addchannel.js"></script>
+    <script src="js/randomfact.js"></script>
 </body>
 </html>
