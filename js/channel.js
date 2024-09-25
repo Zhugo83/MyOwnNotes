@@ -33,10 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let link1, link2;
         if (visibilitySelect.value === 'public') {
             link1 = `${baseUrl}`; // Fix: Use backticks for template literals
-            link2 = `${baseUrl}?modificationPassword=${modPassword}`; // Fix: Use backticks for template literals
+            link2 = `${baseUrl}&modificationPassword=${modPassword}`; // Fix: Use backticks for template literals
         } else if (visibilitySelect.value === 'private') {
-            link1 = `${baseUrl}?visibilityPassword=${viewPassword}`; // Fix: Use backticks for template literals
-            link2 = `${baseUrl}?modificationPassword=${modPassword}&visibilityPassword=${viewPassword}`; // Fix: Use backticks for template literals
+            link1 = `${baseUrl}&visibilityPassword=${viewPassword}`; // Fix: Use backticks for template literals
+            link2 = `${baseUrl}&modificationPassword=${modPassword}&visibilityPassword=${viewPassword}`; // Fix: Use backticks for template literals
         }
 
         shareLink1.setAttribute('data-link', link1);
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     shareLink1.addEventListener('click', () => {
-        if (visibilitySelect.value === 'private') {
+        if (visibilitySelect.value === 'private' && document.getElementById('passwordvisibility').value == "") {
             alert('For the private visibility, you need to add a password');
             return;
         }
@@ -66,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     shareLink2.addEventListener('click', () => {
+        if (visibilitySelect.value === 'private' && document.getElementById('passwordvisibility').value == "") {
+            alert('For the private visibility, you need to add a password');
+            return;
+        }
         generateShareLinks()
         const link = shareLink2.getAttribute('data-link');
         copyToClipboard(link);
@@ -102,7 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const secondPasswordContainer = document.getElementById('secondPasswordContainer');
 
     // Function to toggle second password field based on visibility value
+
     const toggleSecondPasswordField = () => {
+        const visibilityPassword = document.getElementById('passwordvisibility').value;
+        if (visibilityPassword != "") {
+            visibilitySelect.value = 'private';
+        }
         if (visibilitySelect.value === 'private') {
             secondPasswordContainer.style.display = 'block'; // Show second password field
         } else {

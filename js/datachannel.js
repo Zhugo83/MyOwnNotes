@@ -1,117 +1,107 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const body = document.body;
-    const uuid = new URLSearchParams(window.location.search).get('uuid'); // Get the UUID from URL
-    const selfDestructTimer = document.getElementById('selfDestructTimer');
+    const params = new URLSearchParams(window.location.search);
+    const uuid = params.get('uuid');
     const noteTextarea = document.getElementById('note');
     const savedTheme = localStorage.getItem('theme');
+    const modificationPassword = params.get('modificationPassword');
+    const visibilityPassword = params.get('visibilityPassword');
+
+    if (modificationPassword) {
+        document.getElementById('passwordmodification').value = modificationPassword;
+    }
+    
+    if (visibilityPassword) {
+        document.getElementById('passwordvisibility').value = visibilityPassword;
+    }
 
     // Initialize EasyMDE
     const easyMDE = new EasyMDE({
         element: noteTextarea,
         sideBySideFullscreen: false,
-        autoDownloadFontAwesome: false, // Avoid downloading FontAwesome again
-        theme: savedTheme === 'light-mode' ? 'easymde-light' : 'easymde-dark', // Set theme
-        initialValue: noteTextarea.value, // If you have an initial value
+        autoDownloadFontAwesome: false,
+        theme: savedTheme === 'light-mode' ? 'easymde-light' : 'easymde-dark',
         toolbar: [
             'bold', 'italic', 'strikethrough', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', '|', 'side-by-side', '|', 'guide'
         ]
     });
 
-    let currentEndTime; // Variable to hold the current end time
-    let saveTimeout; // Variable to hold the save timeout
+    let ws; // WebSocket variable
+    let isTyping = false; // Track if user is typing to reduce unnecessary broadcasts
 
-    // Fetch channel content
-    fetch(`http://localhost:3000/api/channel/${uuid}`)
-        .then(response => {
-            return response.json();
-        })
-        .then(data => {
-            // Check if there's an error message in the JSON response
-            if (data.message) {
-                // Redirect to error.html with the error message in the URL
-                window.location.href = `error.html?message=${encodeURIComponent(data.message)}`;
-                return; // Stop further execution
+    // Establish WebSocket connection
+    const connectWebSocket = () => {
+        ws = new WebSocket(`ws://localhost:3000/${uuid}`); // Connect to WebSocket server
+
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+
+        ws.onmessage = (event) => {
+            console.log('Raw WebSocket message received:', event.data); // Log raw message for debugging
+            try {
+                const messageData = JSON.parse(event.data);
+        
+                // Avoid updating content while user is typing
+                if (isTyping) return;
+        
+                // Preserve the current cursor position before updating content
+                const cursorPos = easyMDE.codemirror.getCursor();
+                const scrollPos = easyMDE.codemirror.getScrollInfo();
+        
+                // Update note content if it changes
+                if (messageData.content !== undefined) { // Accept empty content too
+                    easyMDE.value(messageData.content);
+                }
+        
+                // Restore the cursor and scroll position after update
+                easyMDE.codemirror.setCursor(cursorPos);
+                easyMDE.codemirror.scrollTo(scrollPos.left, scrollPos.top);
+        
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+                console.error('Received data:', event.data); // Log the raw data received for debugging
             }
-            
-            if (data.content == null)
-            {
-                data.content = '';
-            }
-            easyMDE.value(data.content); // Populate the textarea with the content
-            currentEndTime = new Date(data.selfdestruct); // Convert to Date object
-            startCountdown(currentEndTime); // Start the countdown timer
-        })
-        .catch(error => {
-            console.error('Error fetching channel:', error);
-            window.location.href = `error.html?message=${encodeURIComponent(error.message)}`; // Redirect to error page on catch
-        });
+        };
 
-    // Function to start the countdown
-    const startCountdown = (endTime) => {
-        currentEndTime = endTime; // Set the current end time
-        updateTimerDisplay(); // Initial display update
+        ws.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
 
-        // Update the timer every second
-        setInterval(updateTimerDisplay, 1000);
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
     };
 
-    // Function to update the timer display
-    const updateTimerDisplay = () => {
-        const currentTime = new Date().getTime();
-        const timeRemaining = currentEndTime.getTime() - currentTime;
-
-        if (timeRemaining <= 0) {
-            window.location.href = `error.html?message=💥 The channel has self destructed.`;
-        } else {
-            const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-            selfDestructTimer.textContent = `Self Destruct Timer: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    // Function to broadcast the note content to WebSocket
+    const broadcastContent = () => {
+        const content = easyMDE.value(); // Get current content
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ content })); // Send updated content, even empty strings
         }
     };
 
-    // Function to save the note
-    const autoSave = () => {
-        const content = easyMDE.value();
-        fetch(`http://localhost:3000/api/channel/update/${uuid}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ content }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save channel content');
-            }
-            return response.json();
-        })
-        .then(data => {
-            const selfDestructDate = new Date(data.selfdestruct); // Convert to Date object
-            currentEndTime = selfDestructDate; // Update the current end time
-            updateTimerDisplay(); // Update the display with new self-destruct time
-        })
-        .catch(error => console.error('Error saving channel:', error));
-    };
+    // Listen for keydown event and send immediate update
+    easyMDE.codemirror.on('keydown', () => {
+        isTyping = true; // User is typing
+        // broadcastContent(); // Send current content, even if empty
+        console.log('is typing!!!');
+    });
 
-    // Function to handle input and debounce saving
-    const handleInput = () => {
-        clearTimeout(saveTimeout); // Clear any existing timeout
-        saveTimeout = setTimeout(autoSave, 3000); // Set a new timeout for 3 seconds
-    };
+    // Listen for keyup event to stop sending updates
+    easyMDE.codemirror.on('keyup', () => {
+        isTyping = false; // User finished typing
+        broadcastContent(); // Send current content again
+        console.log('not typing!!!');
+    });
 
-    // Listen for input events on EasyMDE
-    easyMDE.codemirror.on('change', handleInput);
-
-
-
-
-
+    // Initialize WebSocket connection
+    connectWebSocket();
 
 
 
 
     // Data stuff above rest is below for simplicity and organization
+    const body = document.body;
     let textSize = 16;
     const increaseTextSizeBtn = document.getElementById('increaseTextSize');
     const decreaseTextSizeBtn = document.getElementById('decreaseTextSize');
