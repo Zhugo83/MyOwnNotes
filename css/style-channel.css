@@ -250,13 +250,12 @@ body.light-mode .option select {
 }
 
 #timerContainer {
-    display: flex;
-    justify-content: flex-end;
+    display: grid;
     margin-bottom: 20px;
     align-self: center;
 }
 
-#selfDestructTimer {
+#selfDestructTimer, #selfDestructDate {
     font-weight: bold;
 }
 
