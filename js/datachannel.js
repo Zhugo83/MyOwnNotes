@@ -2,31 +2,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const uuid = params.get('uuid');
     const noteTextarea = document.getElementById('note');
-    const modificationPassword = params.get('modificationPassword');
-    const visibilityPassword = params.get('visibilityPassword');
+    const modificationPassword = document.getElementById('passwordmodification');
+    const visibilityPassword = document.getElementById('passwordvisibility');
+
+    // Pre-fill passwords if passed via query parameters
+    if (params.get('modificationPassword')) {
+        modificationPassword.value = params.get('modificationPassword') || '';
+    }
+    if (params.get('visibilityPassword')) { 
+        visibilityPassword.value = params.get('visibilityPassword') || '';
+    }
+
+    let lastModificationPassword = '';
+    let lastVisibilityPassword = '';
+
+    // Event listeners for detecting password changes
+    modificationPassword.addEventListener('input', handlePasswordChange);
+    visibilityPassword.addEventListener('input', handlePasswordChange);
+
+    function handlePasswordChange() {
+        const currentModificationPassword = modificationPassword.value;
+        const currentVisibilityPassword = visibilityPassword.value;
+    
+        // Send updated passwords only if there's a change
+        if (currentModificationPassword !== lastModificationPassword || currentVisibilityPassword !== lastVisibilityPassword) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = {
+                    lastModificationPassword: lastModificationPassword || null, // Send previous password for comparison
+                    lastVisibilityPassword: lastVisibilityPassword || null,     // Send previous password for comparison
+                    newmodificationPassword: currentModificationPassword || null,
+                    newvisibilityPassword: currentVisibilityPassword || null
+                };
+                ws.send(JSON.stringify(message));
+            }
+    
+            // Update stored password values
+            lastModificationPassword = currentModificationPassword;
+            lastVisibilityPassword = currentVisibilityPassword;
+        }
+    }
 
     let ws;
     let clientVersion = 0;  // Local version tracker for OT
 
     // Connect to WebSocket server
     const connectWebSocket = () => {
-        ws = new WebSocket(`ws://localhost:3000/${encodeURIComponent(uuid)}&modificationPassword=${encodeURIComponent(modificationPassword)}&visibilityPassword=${encodeURIComponent(visibilityPassword)}`);
-    
+        ws = new WebSocket(`ws://localhost:3000/${encodeURIComponent(uuid)}`);
+
         ws.onopen = () => {
             console.log('Connected to WebSocket server');
-            const initialMessage = { request: "fetchContent", uuid }; 
-            ws.send(JSON.stringify(initialMessage));
+
+            // Send initial password data after connection is opened
+            const message = {
+                lastModificationPassword: modificationPassword.value || null,
+                lastVisibilityPassword: visibilityPassword.value || null
+            };
+            ws.send(JSON.stringify(message));
         };
-    
+
         ws.onmessage = (event) => {
             handleWebSocketMessage(event);
         };
-    
+
         ws.onclose = () => {
             console.log('Disconnected from WebSocket server');
             clearInterval(countdownTimer);
         };
-    
+
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
         };
@@ -37,64 +79,72 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const messageData = JSON.parse(event.data);
             console.log('Received message:', messageData);  // Log the message for debugging
-    
-            // If a new operation and version are received
-            if (messageData.operation && messageData.version !== undefined) {
-                // Only apply the operation if the server version matches the client's current version
-                if (messageData.version === clientVersion) {
-                    applyServerOperation(messageData.operation, messageData.version);
-                } else {
-                    console.warn('Version mismatch. Skipping operation.');
+
+            if (messageData.password) {
+                // Update passwords from server response
+                if (messageData.password) {
+                    modificationPassword.value = messageData.password.newmodificationPassword || '';
+                    visibilityPassword.value = messageData.password.newvisibilityPassword || '';
+                    lastModificationPassword = modificationPassword.value;
+                    lastVisibilityPassword = visibilityPassword.value;
+                    console.log("Passwords updated from server");
                 }
             }
-    
+
+            // If a new operation and version are received
+            if (messageData.operation && messageData.version !== undefined) {
+                if (messageData.version === clientVersion) {
+                    console.warn("No new changes to apply. Versions are in sync.");
+                } else if (clientVersion < messageData.version) {
+                    console.log("Applying server operation.");
+                    applyServerOperation(messageData.operation, messageData.version);
+                }
+            }
+
             // Update client version if the server version is higher
             if (messageData.version !== undefined && messageData.version > clientVersion) {
                 clientVersion = messageData.version;
+                console.log("Client Version updated to server version:", clientVersion);
             }
-    
-            // If the server sends the full content (e.g., on initial load)
+
+            // Handle initial content load
             if (messageData.content !== undefined) {
-                noteTextarea.value = messageData.content;  // Set the value of the textarea
-                previousValue = messageData.content;  // Update previous value to prevent false detection
+                noteTextarea.value = messageData.content;
+                previousValue = messageData.content;
             }
-    
+
             // Handle self-destruct timer from the server
             if (messageData.selfdestruct !== undefined) {
-                startCountdownTimer(messageData.selfdestruct); 
+                startCountdownTimer(messageData.selfdestruct);
             }
-    
+
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
-            console.error('Received data:', event.data);
         }
     };
 
     // Capture and broadcast the operation (insert/delete) as a message
     const captureAndBroadcastOperation = (operation) => {
         const message = {
-            operation: operation,  // The operation (insert/delete)
-            clientVersion: clientVersion  // Send the current version of the document
+            operation: operation,
+            clientVersion: clientVersion
         };
-    
+
         if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(message));  // Send the operation to the WebSocket server
-            clientVersion++;  // Increment local version after broadcasting
+            ws.send(JSON.stringify(message));
+            clientVersion++;
         }
     };
 
     // Apply an incoming operation from the server
     const applyServerOperation = (operation, version) => {
-        // Apply the operation only if the versions match
+        console.log('Applying operation:', operation);
         if (version === clientVersion) {
-            // Transform and apply the operation (insert/delete)
-            transformAndApplyOperation(operation);
-    
-            // Increment the client version after successfully applying the operation
-            clientVersion++;
-            console.log("Client Version updated to:", clientVersion);
+            console.warn("Versions are in sync. No need to apply.");
         } else {
-            console.warn('Version mismatch. Operation skipped.');
+            transformAndApplyOperation(operation);
+            clientVersion = version;
+            console.log("Client Version updated to:", clientVersion);
         }
     };
 
@@ -122,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listener for changes in the textarea
     // Event listener for changes in the textarea
-    noteTextarea.addEventListener('input', () => {
+    noteTextarea.addEventListener('keyup', () => {
         const currentValue = noteTextarea.value;
 
         // Find the position where the change occurred
@@ -143,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
             operation.position = commonPrefixLength;
         }
 
-        // Broadcast the operation if it's a valid change
         if (operation.type) {
             captureAndBroadcastOperation(operation);
         }
