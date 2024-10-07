@@ -1,45 +1,102 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let passwordChangeTimeout;
+    let isSendingPassword = false;  // Track if we're currently sending password updates
+    
+    // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const uuid = params.get('uuid');
+    
+    // DOM Elements
     const noteTextarea = document.getElementById('note');
     const modificationPassword = document.getElementById('passwordmodification');
     const visibilityPassword = document.getElementById('passwordvisibility');
-
+    const randompasswordbutton1 = document.getElementById('generatePassword');
+    const randompasswordbutton2 = document.getElementById('generatePassword2');
+    
+    // Load passwords from localStorage if they exist
+    const storedModificationPassword = localStorage.getItem(`modificationPassword_${uuid}`);
+    const storedVisibilityPassword = localStorage.getItem(`visibilityPassword_${uuid}`);
+    
+    // Pre-fill passwords if available from localStorage or URL params
+    modificationPassword.value = storedModificationPassword || params.get('modificationPassword') || '';
+    visibilityPassword.value = storedVisibilityPassword || params.get('visibilityPassword') || '';
+    
+    // Track the last known passwords
+    let lastModificationPassword = modificationPassword.value;
+    let lastVisibilityPassword = visibilityPassword.value;
+    
+    // Event listeners for detecting password changes
+    modificationPassword.addEventListener('input', handlePasswordChange);
+    visibilityPassword.addEventListener('input', handlePasswordChange);
+    randompasswordbutton1.addEventListener('click', handlePasswordChange);
+    randompasswordbutton2.addEventListener('click', handlePasswordChange);
+    
+    // Function to handle password changes with debouncing
+    function handlePasswordChange() {
+        // Prevent further changes while sending the update
+        if (isSendingPassword) {
+            return;
+        }
+    
+        // Clear the existing timeout to reset the delay
+        clearTimeout(passwordChangeTimeout);
+    
+        // Disable input fields while the update is pending
+        lockPasswordFields(true);
+    
+        // Set a new timeout to send the update after 5 seconds (5000ms)
+        passwordChangeTimeout = setTimeout(() => {
+            const currentModificationPassword = modificationPassword.value;
+            const currentVisibilityPassword = visibilityPassword.value;
+            
+            // Send updated passwords only if there's a change
+            if (currentModificationPassword !== lastModificationPassword || currentVisibilityPassword !== lastVisibilityPassword) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    const message = {
+                        lastModificationPassword: lastModificationPassword || null, // Send previous password for comparison
+                        lastVisibilityPassword: lastVisibilityPassword || null,     // Send previous password for comparison
+                        newmodificationPassword: currentModificationPassword || null,
+                        newvisibilityPassword: currentVisibilityPassword || null
+                    };
+    
+                    isSendingPassword = true;  // Set flag to indicate we're sending the update
+    
+                    ws.send(JSON.stringify(message));
+                    console.log("Sent password update");
+    
+                    // Store passwords in localStorage
+                    localStorage.setItem(`modificationPassword_${uuid}`, currentModificationPassword);
+                    localStorage.setItem(`visibilityPassword_${uuid}`, currentVisibilityPassword);
+    
+                    // Update stored password values
+                    lastModificationPassword = currentModificationPassword;
+                    lastVisibilityPassword = currentVisibilityPassword;
+                } else {
+                    console.log('WebSocket is closed. Reconnecting...');
+                    connectWebSocket();
+                }
+            } 
+    
+            // Re-enable the fields after the update is sent
+            lockPasswordFields(false);
+            isSendingPassword = false;
+        }, 250);
+    }
+    
+    // Function to lock or unlock the password fields
+    function lockPasswordFields(isLocked) {
+        modificationPassword.disabled = isLocked;
+        visibilityPassword.disabled = isLocked;
+        randompasswordbutton1.disabled = isLocked;
+        randompasswordbutton2.disabled = isLocked;
+    }
+    
     // Pre-fill passwords if passed via query parameters
     if (params.get('modificationPassword')) {
         modificationPassword.value = params.get('modificationPassword') || '';
     }
     if (params.get('visibilityPassword')) { 
         visibilityPassword.value = params.get('visibilityPassword') || '';
-    }
-
-    let lastModificationPassword = '';
-    let lastVisibilityPassword = '';
-
-    // Event listeners for detecting password changes
-    modificationPassword.addEventListener('input', handlePasswordChange);
-    visibilityPassword.addEventListener('input', handlePasswordChange);
-
-    function handlePasswordChange() {
-        const currentModificationPassword = modificationPassword.value;
-        const currentVisibilityPassword = visibilityPassword.value;
-    
-        // Send updated passwords only if there's a change
-        if (currentModificationPassword !== lastModificationPassword || currentVisibilityPassword !== lastVisibilityPassword) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const message = {
-                    lastModificationPassword: lastModificationPassword || null, // Send previous password for comparison
-                    lastVisibilityPassword: lastVisibilityPassword || null,     // Send previous password for comparison
-                    newmodificationPassword: currentModificationPassword || null,
-                    newvisibilityPassword: currentVisibilityPassword || null
-                };
-                ws.send(JSON.stringify(message));
-            }
-    
-            // Update stored password values
-            lastModificationPassword = currentModificationPassword;
-            lastVisibilityPassword = currentVisibilityPassword;
-        }
     }
 
     let ws;
