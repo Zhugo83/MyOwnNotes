@@ -63,6 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to send the password update
     function sendPasswordUpdate(passwordUpdate) {
         awaitingServerResponse = true;
+        if (noteTextarea.disabled){
+            ws.close()
+            console.log("Disconnected due to you not having the correct mod password")
+        }
         if (ws && ws.readyState === WebSocket.OPEN) {
             // Set flag to indicate we are awaiting a server response
     
@@ -102,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastModificationPassword: modificationPassword.value || null,
                 lastVisibilityPassword: visibilityPassword.value || null
             };
+            console.log(message)
             ws.send(JSON.stringify(message));
         };
 
@@ -127,14 +132,35 @@ document.addEventListener('DOMContentLoaded', () => {
             awaitingServerResponse = false;
             if (messageData.password) {
                 // Update passwords from server response
-                modificationPassword.value = messageData.password.newmodificationPassword || '';
-                visibilityPassword.value = messageData.password.newvisibilityPassword || '';
-                lastModificationPassword = modificationPassword.value;
-                lastVisibilityPassword = visibilityPassword.value;
-                localStorage.setItem(`modificationPassword_${uuid}`, lastModificationPassword);
-                localStorage.setItem(`visibilityPassword_${uuid}`, lastVisibilityPassword);
                 noteTextarea.disabled = false;
-                console.log("Passwords updated from server");
+                console.log(modificationPassword.value, messageData.password.newmodificationPassword)
+                if (messageData.password.newmodificationPassword == null) {
+                    console.log("No new modification password")
+                } else {
+                    // Lock the password fields before updating
+                    modificationPassword.disabled = true;
+                    visibilityPassword.disabled = true;
+                
+                    console.log("Password fields locked for update...");
+                
+                    // Update the modification password
+                    modificationPassword.value = messageData.password.newmodificationPassword || '';
+                    lastModificationPassword = messageData.password.newmodificationPassword || '';
+                    localStorage.setItem(`modificationPassword_${uuid}`, lastModificationPassword);
+                
+                    // Update the visibility password
+                    visibilityPassword.value = messageData.password.newvisibilityPassword || '';
+                    lastVisibilityPassword = messageData.password.newvisibilityPassword || '';
+                    localStorage.setItem(`visibilityPassword_${uuid}`, lastVisibilityPassword);
+                
+                    console.log("Modification and visibility passwords updated");
+                
+                    // Unlock the fields after update
+                    setTimeout(() => {
+                        modificationPassword.disabled = false;
+                        visibilityPassword.disabled = false;
+                    }, 200);  // Set a timeout to simulate a delay, allowing the user to notice the change
+                }
             }
 
             // If a new operation and version are received
