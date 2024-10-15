@@ -5,21 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyOwnNotes-Channel</title>
     <link rel="stylesheet" href="css/style-channel.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 </head>
 <body class="no-transition">
-
-    <div class="loader-container">
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-    </div>
     
     <header>
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
+                <li><a id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</a></li>
             </ul>
         </nav>
     </header>
@@ -64,9 +57,6 @@
                 <p>Current text size: <span id="textSizeDisplay">16px</span></p>
                 <abbr title="Increase the Text size"><button id="increaseTextSize"><i class="fas fa-arrow-up"></i></button></abbr>
                 <abbr title="Decrease the Text size"><button id="decreaseTextSize"><i class="fas fa-arrow-down"></i></button></abbr>
-            </article>
-            <article class="option">
-                <button id="toggleTheme"><i class="fas fa-sun"></i> Light Mode</button>
             </article>
         </section>
     

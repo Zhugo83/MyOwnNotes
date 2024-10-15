@@ -186,6 +186,10 @@ body.light-mode #note {
     position: fixed;
     right: 0px;
     z-index: 1000;
+    height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: thin; /* Options: auto, thin */
+    scrollbar-color: #888 #f1f1f1; /* thumb color and track color */
 }
 
 body.light-mode #sidebar {
@@ -276,69 +280,3 @@ body.light-mode #toggleSidebar {
     background-color: #ccc;
     color: #000;
 }
-/* 
-.loader-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: var(--dark-mode-gradiant2);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 10000;
-    animation: fadeout 0.5s forwards;
-    animation-delay: 2s;
-    transition: none;
-}
-
-.progress-bar {
-    width: 80%;
-    max-width: 400px;
-    height: 20px;
-    background-color: var(--dark-mode-gradiant1);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: none;
-}
-
-.progress {
-    width: 0;
-    height: 100%;
-    background-color: var(--dark-mode-text);
-    animation: fill 2s forwards;
-    transition: none;
-}
-
-body.light-mode .loader-container {
-    background-color: var(--light-mode-gradiant2);
-    transition: none;
-}
-body.light-mode .progress-bar {
-    background-color: var(--light-mode-gradiant1);
-    transition: none;
-}
-body.light-mode .progress {
-    background-color: var(--light-mode-text);
-    transition: none;
-}
-
-@keyframes fill {
-    0% {
-        width: 0;
-    }
-    100% {
-        width: 100%;
-    }
-}
-
-@keyframes fadeout {
-    0% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-        visibility: hidden;
-    }
-} */

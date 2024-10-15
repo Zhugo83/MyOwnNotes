@@ -18,10 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Pre-fill passwords if available from localStorage or URL params
     if (storedModificationPassword && !params.get('modificationPassword')) {
-        modificationPassword.value = params.get('modificationPassword') || storedModificationPassword || null;
+        modificationPassword.value = params.get('modificationPassword') || storedModificationPassword || "";
     }
     if (storedVisibilityPassword && !params.get('visibilityPassword')) {
-        visibilityPassword.value = params.get('modificationPassword') || storedVisibilityPassword || null;
+        visibilityPassword.value = params.get('modificationPassword') || storedVisibilityPassword || "";
     }
     if (params.get('modificationPassword')) {
         modificationPassword.value = params.get('modificationPassword');
@@ -46,10 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Prepare the new password data
         const newPasswordUpdate = {
-            lastModificationPassword: lastModificationPassword || null, // previous password for comparison
-            lastVisibilityPassword: lastVisibilityPassword || null,     // previous password for comparison
-            newmodificationPassword: currentModificationPassword || null,
-            newvisibilityPassword: currentVisibilityPassword || null
+            lastModificationPassword: lastModificationPassword || "", // previous password for comparison
+            lastVisibilityPassword: lastVisibilityPassword || "",     // previous password for comparison
+            newmodificationPassword: currentModificationPassword || "",
+            newvisibilityPassword: currentVisibilityPassword || ""
         };
 
         // If waiting for the server, queue the new update
@@ -79,10 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
             lastVisibilityPassword = passwordUpdate.newvisibilityPassword;
     
             // Store passwords in localStorage
-            if (passwordUpdate.newmodificationPassword && passwordUpdate.newmodificationPassword != null) {
+            if (passwordUpdate.newmodificationPassword) {
                 localStorage.setItem(`modificationPassword_${uuid}`, passwordUpdate.newmodificationPassword);
             }
-            if (passwordUpdate.newvisibilityPassword && passwordUpdate.newvisibilityPassword != null) {
+            if (passwordUpdate.newvisibilityPassword) {
                 localStorage.setItem(`visibilityPassword_${uuid}`, passwordUpdate.newvisibilityPassword);
             }
         } else {
@@ -103,10 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Send initial password data after connection is opened
             const message = {
-                lastModificationPassword: modificationPassword.value || null,
-                lastVisibilityPassword: visibilityPassword.value || null
+                lastModificationPassword: modificationPassword.value || "",
+                lastVisibilityPassword: visibilityPassword.value || ""
             };
-            console.log(message)
             ws.send(JSON.stringify(message));
         };
 
@@ -325,29 +324,23 @@ const findCommonSuffixLength = (oldStr, newStr, prefixLength) => {
             const currentTime = new Date();
             let duration = Math.floor((selfDestructDate - currentTime) / 1000);
     
-            if (duration <= 1) {
+            if (duration <= 3) {
                 clearInterval(countdownTimer);
                 timerDisplay.textContent = "Time's up!";
                 const messages = [
-                    "The channel auto destructed, but you managed to leave before it could hurt you.",
-                    "Boom! The channel is gone, but you live to chat another day!",
-                    "Congratulations! You survived the channel's self-destruction. Close call!",
-                    "Phew! The channel exploded, but you escaped just in time!",
-                    "Channel? What channel? It's been vaporized... luckily, you're still here.",
-                    "Self-destruct sequence complete! The channel is toast, but you're unscathed.",
-                    "The channel is no more! But hey, you made it out alive!",
-                    "You narrowly escaped the channel's fiery end. You're a hero... kind of.",
-                    "The channel exploded! You walked away like a movie star in slow motion.",
-                    "The channel went kaboom! But your coolness remains intact.",
-                    "The channel? It’s history! You, however, are a legend.",
-                    "Rest in peace, channel. You will not be missed. But you're still here!",
-                    "Self-destruct successful. The channel’s gone, but your wit survived the blast!",
-                    "The channel is dust, but you dodged it like a pro. Nice reflexes!",
-                    "You outlasted the channel's self-destruct like a true survivor!",
-                    "The channel's destruction was dramatic, but you're still the star of the show!",
-                    "Bam! The channel's gone, but you’re still standing – like a champion.",
-                    "Channel obliterated. You're officially too cool to be destroyed.",
-                    "The channel imploded, but your awesomeness remains untouched!"
+                    "The {gray}channel auto {#ff5a00}destructed!",
+                    "{#ff5a00}Boom! jus like that the {gray}channel is gone!",
+                    "{gray}channel? What {gray}channel? It's been {#99a7ff}vaporized...",
+                    "The {gray}channel is no more!",
+                    "The {gray}channel {#ff5a00}exploded! You walked away like a movie star in slow motion.",
+                    "The {gray}channel went {#ff5a00}kaboom!",
+                    "The {gray}channel? It’s history!",
+                    "Rest in peace, {gray}channel. You will not be missed.",
+                    "The {gray}channel is {gray}dust.",
+                    "The {gray}channel's destruction was {#99a7ff}dramatic!",
+                    "{yellow}KA {#ff5a00}BOOM! The {gray}channel's gone!!",
+                    "{gray}channel obliterated.",
+                    "The {gray}channel {#ff5a00}imploded!"
                 ];
     
                 // Select a random message from the list
